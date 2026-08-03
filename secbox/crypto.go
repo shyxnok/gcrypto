@@ -1,4 +1,4 @@
-package encrypto
+package secbox
 
 import (
 	"crypto/rand"
@@ -8,12 +8,15 @@ import (
 	"fmt"
 )
 
+// delta 为 XXTEA 的黄金分割常数，参与每轮加密的扩散。
 const delta = 0x9e3779b9
 
+// mx 为 XXTEA 的单步混合函数。
 func mx(y, z, p, e, sum uint32, key []uint32) uint32 {
 	return ((z>>5 ^ y<<2) + (y>>3 ^ z<<4)) ^ ((sum ^ y) + (key[(p&3)^e] ^ z))
 }
 
+// btea 对 uint32 数组执行 XXTEA 变换。n>1 为加密，n<-1 为解密。
 func btea(v []uint32, n int, key []uint32, rounds uint32) {
 	var i, y, z, p, e, sum uint32
 	// Coding Part
@@ -73,10 +76,11 @@ func btea(v []uint32, n int, key []uint32, rounds uint32) {
 	}
 }
 
+// bytesToUint32 把字节切片打包为 uint32 数组；padding 为真时按 PKCS#7 填充补齐。
 func bytesToUint32(in []byte, inLen int, out []uint32, padding bool) {
 	// (i & 3) << 3 -> [0, 8, 16, 24]
 	for i := 0; i < inLen; i++ {
-		out[i>>2] |= uint32(int(in[i]) << ((i & 3) << 3))
+		out[i>>2] |= uint32(in[i]) << ((i & 3) << 3)
 	}
 
 	if padding {
@@ -86,11 +90,13 @@ func bytesToUint32(in []byte, inLen int, out []uint32, padding bool) {
 		}
 
 		for i := inLen; i < inLen+pad; i++ {
-			out[i>>2] |= uint32(pad << ((i & 3) << 3))
+			out[i>>2] |= uint32(pad) << ((i & 3) << 3)
 		}
 	}
 }
 
+// uint32sToBytes 把 uint32 数组还原为字节切片；padding 为真时校验并去除 PKCS#7 填充。
+// 返回去除填充后的有效长度，负数表示填充非法。
 func uint32sToBytes(in []uint32, inLen int, out []byte, padding bool) int {
 	for i := 0; i < inLen; i++ {
 		out[4*i] = byte(in[i] & 0xFF)
@@ -122,7 +128,23 @@ func uint32sToBytes(in []uint32, inLen int, out []byte, padding bool) int {
 	return outLen
 }
 
-// URandom return random bytes of the specified length for encryption.
+// requireKey 校验 XXTEA 密钥必须为 16 字节。
+func requireKey(key []byte) error {
+	if len(key) != 16 {
+		return errors.New("need a 16-byte key")
+	}
+	return nil
+}
+
+// requireNoPaddingLen 校验无填充模式的数据长度：不小于 8 字节且为 4 的倍数。
+func requireNoPaddingLen(dataLen int) error {
+	if dataLen < 8 || (dataLen&3) != 0 {
+		return errors.New("data length must be a multiple of 4 bytes and must not be less than 8 bytes")
+	}
+	return nil
+}
+
+// URandom 返回指定长度的随机字节。
 func URandom(n int) ([]byte, error) {
 	if n <= 0 {
 		return nil, fmt.Errorf("invalid length n=%d", n)
@@ -135,21 +157,20 @@ func URandom(n int) ([]byte, error) {
 	return token, nil
 }
 
-// Encrypt the data with key.
+// Encrypt 用密钥加密数据。padding 为真时自动 PKCS#7 填充（支持任意长度）；
+// 为假时数据长度必须是不小于 8 字节的 4 的倍数。rounds 为 0 时使用默认轮数。
 func Encrypt(data []byte, key []byte, padding bool, rounds uint32) ([]byte, error) {
-	var aLen, dLen, kLen, paddingValue int
-	dLen, kLen = len(data), len(key)
+	var aLen, paddingValue int
+	dLen := len(data)
+
+	if err := requireKey(key); err != nil {
+		return nil, err
+	}
 
 	if padding {
 		paddingValue = 1
-	}
-
-	if kLen != 16 {
-		return nil, errors.New("need a 16-byte key")
-	}
-
-	if !padding && (dLen < 8 || (dLen&3) != 0) {
-		return nil, errors.New("data length must be a multiple of 4 bytes and must not be less than 8 bytes")
+	} else if err := requireNoPaddingLen(dLen); err != nil {
+		return nil, err
 	}
 
 	if dLen < 4 {
@@ -161,7 +182,7 @@ func Encrypt(data []byte, key []byte, padding bool, rounds uint32) ([]byte, erro
 	d := make([]uint32, aLen)
 	k := make([]uint32, 4)
 	bytesToUint32(data, dLen, d, padding)
-	bytesToUint32(key, kLen, k, false)
+	bytesToUint32(key, 16, k, false)
 	btea(d, aLen, k, rounds)
 
 	retBuf := make([]byte, aLen<<2)
@@ -169,27 +190,30 @@ func Encrypt(data []byte, key []byte, padding bool, rounds uint32) ([]byte, erro
 	return retBuf, nil
 }
 
-// Decrypt the data with key.
+// Decrypt 用密钥解密数据，参数语义与 Encrypt 一致。
 func Decrypt(data []byte, key []byte, padding bool, rounds uint32) ([]byte, error) {
-	var aLen, dLen, kLen, rc int
-	dLen, kLen = len(data), len(key)
-	if kLen != 16 {
-		return nil, errors.New("need a 16-byte key")
-	}
+	var rc int
+	dLen := len(data)
 
-	if !padding && (dLen < 8 || (dLen&3) != 0) {
-		return nil, errors.New("data length must be a multiple of 4 bytes and must not be less than 8 bytes")
+	if err := requireKey(key); err != nil {
+		return nil, err
 	}
 
 	if (dLen&3) != 0 || dLen < 8 {
 		return nil, errors.New("invalid data, data length is not a multiple of 4, or less than 8")
 	}
 
-	aLen = dLen / 4
+	if !padding {
+		if err := requireNoPaddingLen(dLen); err != nil {
+			return nil, err
+		}
+	}
+
+	aLen := dLen / 4
 	d := make([]uint32, aLen)
 	k := make([]uint32, 4)
 	bytesToUint32(data, dLen, d, false)
-	bytesToUint32(key, kLen, k, false)
+	bytesToUint32(key, 16, k, false)
 	btea(d, -aLen, k, rounds)
 
 	refBuf := make([]byte, dLen)
@@ -206,7 +230,7 @@ func Decrypt(data []byte, key []byte, padding bool, rounds uint32) ([]byte, erro
 	return refBuf, nil
 }
 
-// EncryptBase64 encrypts data with a key and returns the base64 encoding of the result.
+// EncryptBase64 加密后返回 base64 编码结果。
 func EncryptBase64(data []byte, key []byte, padding bool, rounds uint32) (string, error) {
 	v, err := Encrypt(data, key, padding, rounds)
 	if err != nil {
@@ -215,7 +239,7 @@ func EncryptBase64(data []byte, key []byte, padding bool, rounds uint32) (string
 	return base64.StdEncoding.EncodeToString(v), nil
 }
 
-// DecryptBase64 decrypt the base64 encoded data with key.
+// DecryptBase64 解密 base64 编码的数据。
 func DecryptBase64(b64Str string, key []byte, padding bool, rounds uint32) ([]byte, error) {
 	dataBytes, err := base64.StdEncoding.DecodeString(b64Str)
 	if err != nil {
@@ -229,7 +253,7 @@ func DecryptBase64(b64Str string, key []byte, padding bool, rounds uint32) ([]by
 	return v, nil
 }
 
-// EncryptHex encrypts data with a key and returns the hexadecimal encoding of the result.
+// EncryptHex 加密后返回十六进制编码结果。
 func EncryptHex(data []byte, key []byte, padding bool, rounds uint32) (string, error) {
 	v, err := Encrypt(data, key, padding, rounds)
 	if err != nil {
@@ -238,7 +262,7 @@ func EncryptHex(data []byte, key []byte, padding bool, rounds uint32) (string, e
 	return hex.EncodeToString(v), nil
 }
 
-// DecryptHex decrypt the hexadecimal encoded data with key.
+// DecryptHex 解密十六进制编码的数据。
 func DecryptHex(hexStr string, key []byte, padding bool, rounds uint32) ([]byte, error) {
 	dataBytes, err := hex.DecodeString(hexStr)
 	if err != nil {
@@ -252,31 +276,26 @@ func DecryptHex(hexStr string, key []byte, padding bool, rounds uint32) ([]byte,
 	return v, nil
 }
 
-func getXXTeaKey() []byte {
-	xor := byte(0x47)
-	p1 := []byte{0xa4, 0x59, 0x94, 0xad}
-	p2 := []byte{0x88, 0x31, 0xb2, 0x1a}
-	p3 := []byte{0xd7, 0xc4, 0x43, 0x8f}
-	p4 := []byte{0x8f, 0x51, 0xe3, 0x29}
-
-	key := append(p1, append(p2, append(p3, p4...)...)...)
+// textKey 为 EncryptText/DecryptText 使用的固定密钥，包初始化时计算一次。
+var textKey = func() []byte {
+	key := []byte{
+		0xa4, 0x59, 0x94, 0xad,
+		0x88, 0x31, 0xb2, 0x1a,
+		0xd7, 0xc4, 0x43, 0x8f,
+		0x8f, 0x51, 0xe3, 0x29,
+	}
 	for i := range key {
-		key[i] ^= xor
+		key[i] ^= 0x47
 	}
 	return key
-}
+}()
 
-
-
-// EncryptText 通用文本/文件加密，支持任意长度二进制
-// 适用于txt/md等普通文档，自动PKCS7填充，普通人打开为乱码
+// EncryptText 通用文本/文件加密，支持任意长度二进制，自动 PKCS7 填充，普通人打开为乱码。
 func EncryptText(data []byte) ([]byte, error) {
-	key := getXXTeaKey()
-	return Encrypt(data, key, true, 0)
+	return Encrypt(data, textKey, true, 0)
 }
 
-// DecryptText 通用文本/文件解密
+// DecryptText 通用文本/文件解密。
 func DecryptText(data []byte) ([]byte, error) {
-	key := getXXTeaKey()
-	return Decrypt(data, key, true, 0)
+	return Decrypt(data, textKey, true, 0)
 }

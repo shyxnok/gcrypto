@@ -1,4 +1,4 @@
-package encrypto
+package secbox
 
 import (
 	"bytes"

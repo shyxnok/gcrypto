@@ -3,8 +3,6 @@ package secbox
 import (
 	"fmt"
 	"os"
-
-	"gcrypto/encrypto"
 )
 
 func EncryptFile(srcPath, dstPath string) error {
@@ -13,7 +11,7 @@ func EncryptFile(srcPath, dstPath string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	encrypted, err := encrypto.EncryptText(raw)
+	encrypted, err := EncryptText(raw)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt file: %w", err)
 	}
@@ -25,7 +23,7 @@ func DecryptFile(srcPath, dstPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
-	raw, err := encrypto.DecryptText(encBin)
+	raw, err := DecryptText(encBin)
 	if err != nil {
 		return fmt.Errorf("failed to decrypt file: %w", err)
 	}

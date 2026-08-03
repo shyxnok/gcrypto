@@ -2,3 +2,8 @@ go.sum
 .DS_Store
 .vscode/
 cache/
+
+# 构建产物
+bin/
+dist/
+/gcrypto

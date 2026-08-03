@@ -1,9 +1,7 @@
 package main
 
-import (
-	"gcrypto/cmd"
-)
+import "gcrypto/secbox"
 
 func main() {
-	cmd.Execute()
+	secbox.Execute()
 }
