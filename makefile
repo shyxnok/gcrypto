@@ -1,4 +1,4 @@
-NAME=xbsrebuild
+NAME=gcrypto
 BINDIR=bin
 GOBUILD=go build -ldflags '-w -s'
 
@@ -11,27 +11,27 @@ WINDOWS_ARCH_LIST = \
 	windows-386 \
 	windows-amd64
 
-# all: $(PLATFORM_LIST) $(WINDOWS_ARCH_LIST)
+all: $(PLATFORM_LIST) $(WINDOWS_ARCH_LIST)
 
-# darwin-amd64:
-# 	GOARCH=amd64 GOOS=darwin $(GOBUILD) -o $(BINDIR)/$(NAME)-$@
+darwin-amd64:
+	GOARCH=amd64 GOOS=darwin $(GOBUILD) -o $(BINDIR)/$(NAME)-$@
 
 darwin-arm64:
-# 	GOARCH=arm64 GOOS=darwin $(GOBUILD) -o $(BINDIR)/$(NAME)-$@
-	GOARCH=arm64 GOOS=darwin $(GOBUILD) -o $(BINDIR)/xbs
+	GOARCH=arm64 GOOS=darwin $(GOBUILD) -o $(BINDIR)/$(NAME)-$@
+
 	
 
-# linux-amd64:
-# 	GOARCH=amd64 GOOS=linux $(GOBUILD) -o $(BINDIR)/$(NAME)-$@
+linux-amd64:
+	GOARCH=amd64 GOOS=linux $(GOBUILD) -o $(BINDIR)/$(NAME)-$@
 
-# linux-arm64:
-# 	GOARCH=arm64 GOOS=linux $(GOBUILD) -o $(BINDIR)/$(NAME)-$@
+linux-arm64:
+	GOARCH=arm64 GOOS=linux $(GOBUILD) -o $(BINDIR)/$(NAME)-$@
 
-# windows-386:
-# 	GOARCH=386 GOOS=windows $(GOBUILD) -o $(BINDIR)/$(NAME)-$@.exe
+windows-386:
+	GOARCH=386 GOOS=windows $(GOBUILD) -o $(BINDIR)/$(NAME)-$@.exe
 	
-# windows-amd64:
-# 	GOARCH=amd64 GOOS=windows $(GOBUILD) -o $(BINDIR)/$(NAME)-$@.exe
+windows-amd64:
+	GOARCH=amd64 GOOS=windows $(GOBUILD) -o $(BINDIR)/$(NAME)-$@.exe
 
 
 gz_releases=$(addsuffix .gz, $(PLATFORM_LIST))
@@ -49,5 +49,5 @@ all-arch: $(PLATFORM_LIST) $(WINDOWS_ARCH_LIST)
 releases: $(gz_releases) $(zip_releases)
 
 
-clean:
-	rm $(BINDIR)/xbs*
+clean: 
+	rm $(BINDIR)/gcrypto*

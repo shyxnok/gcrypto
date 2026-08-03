@@ -1,6 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -10,8 +7,8 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "xbs",
-	Short: "A brief description of your application",
+	Use:   "secbox",
+	Short: "A small tool for file encryption and decryption",
 }
 
 func Execute() {

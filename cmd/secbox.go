@@ -8,40 +8,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var secboxCmd = &cobra.Command{
-	Use:   "secbox",
-	Short: "Encrypt/Decrypt files using secbox",
+var encryptCmd = &cobra.Command{
+	Use:   "encrypt",
+	Short: "Encrypt a file",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 3 {
-			fmt.Println("Usage: xbs secbox <encrypt|decrypt> <srcPath> <dstPath>")
+		if len(args) < 2 {
+			fmt.Println("Usage:  secbox encrypt <srcPath> <dstPath>")
 			return
 		}
-
-		action := args[0]
-		srcPath := args[1]
-		dstPath := args[2]
-
-		switch action {
-		case "encrypt":
-			err := secbox.EncryptFile(srcPath, dstPath)
-			if err != nil {
-				fmt.Printf("Error encrypting file: %v\n", err)
-				return
-			}
-			fmt.Println("File encrypted successfully.")
-		case "decrypt":
-			err := secbox.DecryptFile(srcPath, dstPath)
-			if err != nil {
-				fmt.Printf("Error decrypting file: %v\n", err)
-				return
-			}
-			fmt.Println("File decrypted successfully.")
-		default:
-			fmt.Println("Invalid action. Use 'encrypt' or 'decrypt'.")
+		err := secbox.EncryptFile(args[0], args[1])
+		if err != nil {
+			fmt.Printf("Error encrypting file: %v\n", err)
+			return
 		}
+		fmt.Println("File encrypted successfully.")
+	},
+}
+
+var decryptCmd = &cobra.Command{
+	Use:   "decrypt",
+	Short: "Decrypt a file",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 2 {
+			fmt.Println("Usage:  secbox decrypt <srcPath> <dstPath>")
+			return
+		}
+		err := secbox.DecryptFile(args[0], args[1])
+		if err != nil {
+			fmt.Printf("Error decrypting file: %v\n", err)
+			return
+		}
+		fmt.Println("File decrypted successfully.")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(secboxCmd)
+	rootCmd.AddCommand(encryptCmd)
+	rootCmd.AddCommand(decryptCmd)
 }
