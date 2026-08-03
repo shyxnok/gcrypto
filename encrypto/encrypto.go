@@ -1,10 +1,11 @@
 package encrypto
 
 import (
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
-	"math/rand"
+	"fmt"
 )
 
 const delta = 0x9e3779b9
@@ -122,12 +123,14 @@ func uint32sToBytes(in []uint32, inLen int, out []byte, padding bool) int {
 }
 
 // URandom return random bytes of the specified length for encryption.
-func URandom(n int, seed int64) ([]byte, error) {
-	rand.Seed(seed)
+func URandom(n int) ([]byte, error) {
+	if n <= 0 {
+		return nil, fmt.Errorf("invalid length n=%d", n)
+	}
 	token := make([]byte, n)
 	_, err := rand.Read(token)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read random failed: %w", err)
 	}
 	return token, nil
 }
@@ -247,4 +250,29 @@ func DecryptHex(hexStr string, key []byte, padding bool, rounds uint32) ([]byte,
 		return nil, err
 	}
 	return v, nil
+}
+
+func getXXTeaKey() []byte {
+	xor := byte(0x47)
+	p1 := []byte{0xa4, 0x59, 0x94, 0xad}
+	p2 := []byte{0x88, 0x31, 0xb2, 0x1a}
+	p3 := []byte{0xd7, 0xc4, 0x43, 0x8f}
+	p4 := []byte{0x8f, 0x51, 0xe3, 0x29}
+
+	key := append(p1, append(p2, append(p3, p4...)...)...)
+	for i := range key {
+		key[i] ^= xor
+	}
+	return key
+}
+
+// 对外封装业务接口
+func myEncrypt(data []byte) ([]byte, error) {
+	key := getXXTeaKey()
+	return Encrypt(data, key, false, 0)
+}
+
+func myDecrypt(data []byte) ([]byte, error) {
+	key := getXXTeaKey()
+	return Decrypt(data, key, false, 0)
 }
