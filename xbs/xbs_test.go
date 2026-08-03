@@ -3,8 +3,8 @@ package xbs
 import (
 	"bytes"
 	"encoding/binary"
+	"gcrypto/encrypto"
 	"testing"
-	"xbsrebuild/encrypto"
 )
 
 // TestRoundTrip 覆盖各种长度的JSON往返加解密，包括此前会失败的nil/空数据。

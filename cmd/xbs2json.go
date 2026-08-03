@@ -6,7 +6,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
-	"xbsrebuild/xbs"
+	"gcrypto/xbs"
 
 	"github.com/spf13/cobra"
 )

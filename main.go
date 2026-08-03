@@ -1,7 +1,7 @@
 package main
 
 import (
-	"xbsrebuild/cmd"
+	"gcrypto/cmd"
 )
 
 func main() {

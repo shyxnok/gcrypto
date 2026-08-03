@@ -1,4 +1,4 @@
-module xbsrebuild
+module gcrypto
 
 go 1.20
 

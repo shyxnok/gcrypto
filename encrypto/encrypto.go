@@ -266,13 +266,17 @@ func getXXTeaKey() []byte {
 	return key
 }
 
-// 对外封装业务接口
-func myEncrypt(data []byte) ([]byte, error) {
+
+
+// EncryptText 通用文本/文件加密，支持任意长度二进制
+// 适用于txt/md等普通文档，自动PKCS7填充，普通人打开为乱码
+func EncryptText(data []byte) ([]byte, error) {
 	key := getXXTeaKey()
-	return Encrypt(data, key, false, 0)
+	return Encrypt(data, key, true, 0)
 }
 
-func myDecrypt(data []byte) ([]byte, error) {
+// DecryptText 通用文本/文件解密
+func DecryptText(data []byte) ([]byte, error) {
 	key := getXXTeaKey()
-	return Decrypt(data, key, false, 0)
+	return Decrypt(data, key, true, 0)
 }

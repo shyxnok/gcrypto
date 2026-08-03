@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"xbsrebuild/encrypto"
+	"gcrypto/encrypto"
 )
 
 // xxTeaKey XBS内置xxtea密钥
