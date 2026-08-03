@@ -7,17 +7,13 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "secbox",
+	Use:   "gcrypto",
 	Short: "A small tool for file encryption and decryption",
 }
 
+// Execute 运行根命令。错误由 cobra 打印到 stderr，并以退出码 1 结束。
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
-}
-
-func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

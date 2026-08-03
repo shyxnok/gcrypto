@@ -1,48 +1,37 @@
 package cmd
 
 import (
-	"fmt"
-
 	"gcrypto/secbox"
 
 	"github.com/spf13/cobra"
 )
 
 var encryptCmd = &cobra.Command{
-	Use:   "encrypt",
+	Use:   "encrypt <srcPath> <dstPath>",
 	Short: "Encrypt a file",
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 2 {
-			fmt.Println("Usage:  secbox encrypt <srcPath> <dstPath>")
-			return
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := secbox.EncryptFile(args[0], args[1]); err != nil {
+			return err
 		}
-		err := secbox.EncryptFile(args[0], args[1])
-		if err != nil {
-			fmt.Printf("Error encrypting file: %v\n", err)
-			return
-		}
-		fmt.Println("File encrypted successfully.")
+		cmd.Println("File encrypted successfully.")
+		return nil
 	},
 }
 
 var decryptCmd = &cobra.Command{
-	Use:   "decrypt",
+	Use:   "decrypt <srcPath> <dstPath>",
 	Short: "Decrypt a file",
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 2 {
-			fmt.Println("Usage:  secbox decrypt <srcPath> <dstPath>")
-			return
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := secbox.DecryptFile(args[0], args[1]); err != nil {
+			return err
 		}
-		err := secbox.DecryptFile(args[0], args[1])
-		if err != nil {
-			fmt.Printf("Error decrypting file: %v\n", err)
-			return
-		}
-		fmt.Println("File decrypted successfully.")
+		cmd.Println("File decrypted successfully.")
+		return nil
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(encryptCmd)
-	rootCmd.AddCommand(decryptCmd)
+	rootCmd.AddCommand(encryptCmd, decryptCmd)
 }
