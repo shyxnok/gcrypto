@@ -1,7 +1,7 @@
 package main
 
-import "gcrypto/secbox"
+import "gcrypto/cli"
 
 func main() {
-	secbox.Execute()
+	cli.Execute()
 }

@@ -1,7 +1,10 @@
-package secbox
+package cli
 
 import (
 	"os"
+
+	"gcrypto/dlh"
+	"gcrypto/elh"
 
 	"github.com/spf13/cobra"
 )
@@ -20,27 +23,29 @@ func Execute() {
 }
 
 var encryptCmd = &cobra.Command{
-	Use:   "encrypt <srcPath> <dstPath>",
-	Short: "Encrypt a file",
+	Use:   "encrypt <srcPath> <suffix>",
+	Short: "Encrypt a file to any suffix",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := EncryptFile(args[0], args[1]); err != nil {
+		dst, err := elh.EncryptFileExt(args[0], args[1])
+		if err != nil {
 			return err
 		}
-		cmd.Println("File encrypted successfully.")
+		cmd.Printf("File encrypted successfully: %s\n", dst)
 		return nil
 	},
 }
 
 var decryptCmd = &cobra.Command{
-	Use:   "decrypt <srcPath> <dstPath>",
+	Use:   "decrypt <srcPath>",
 	Short: "Decrypt a file",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := DecryptFile(args[0], args[1]); err != nil {
+		dst, err := dlh.DecryptFile(args[0])
+		if err != nil {
 			return err
 		}
-		cmd.Println("File decrypted successfully.")
+		cmd.Printf("File decrypted successfully: %s\n", dst)
 		return nil
 	},
 }

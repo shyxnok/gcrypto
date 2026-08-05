@@ -26,6 +26,15 @@ ZIP := $(addprefix $(DISTDIR)/$(NAME)-,$(addsuffix .zip,$(WINDOWS_PLATFORMS)))
 all: $(BINS)
 all-arch: all
 
+# 便捷工具：elh 加密、dlh 解密（单参数用法，输出自动带/去 .lh 后缀）
+TOOLS := elh dlh
+
+$(addprefix $(BINDIR)/,$(TOOLS)): $(BINDIR)/%: cmd/%/main.go
+	@mkdir -p $(BINDIR)
+	$(GOBUILD) -o "$@" "./cmd/$(notdir $@)"
+
+tools: $(addprefix $(BINDIR)/,$(TOOLS))
+
 # 平台别名：make linux-amd64 只构建单个平台
 $(UNIX_PLATFORMS):    %: $(BINDIR)/$(NAME)-%
 $(WINDOWS_PLATFORMS): %: $(BINDIR)/$(NAME)-%.exe
@@ -66,10 +75,11 @@ wasm-release: wasm
 
 clean:
 	rm -rf wasm
-	rm -f $(BINDIR)/$(NAME)* $(DISTDIR)/$(NAME)*
+	rm -f $(BINDIR)/$(NAME)* $(addprefix $(BINDIR)/,$(TOOLS)) $(DISTDIR)/$(NAME)*
 
 help:
 	@echo "make [all]         构建全部平台二进制到 $(BINDIR)/"
+	@echo "make tools         构建 elh/dlh 便捷命令到 $(BINDIR)/"
 	@echo "make <platform>    只构建一个平台，如 make linux-amd64"
 	@echo "make releases      构建二进制并打包 gz/zip 到 $(DISTDIR)/"
 	@echo "make wasm          构建 WebAssembly 到 wasm/main.wasm"
