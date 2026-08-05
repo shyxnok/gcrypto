@@ -21,7 +21,7 @@ BINS         := $(UNIX_BINS) $(addsuffix .exe,$(WINDOWS_BINS))
 GZ  := $(addprefix $(DISTDIR)/$(NAME)-,$(addsuffix .gz,$(UNIX_PLATFORMS)))
 ZIP := $(addprefix $(DISTDIR)/$(NAME)-,$(addsuffix .zip,$(WINDOWS_PLATFORMS)))
 
-.PHONY: all all-arch releases clean help $(PLATFORMS)
+.PHONY: all all-arch releases wasm wasm-release clean help $(PLATFORMS)
 
 all: $(BINS)
 all-arch: all
@@ -50,11 +50,28 @@ $(DISTDIR)/$(NAME)-%.zip: $(BINDIR)/$(NAME)-%.exe
 
 releases: $(GZ) $(ZIP)
 
+# wasm：编译为浏览器可加载的 WebAssembly（入口 main.go，输出 main.wasm）
+# 注意：js/wasm 无 cgo，无需 CGO_ENABLED=0；-s -w 压缩体积
+WASM := wasm/main.wasm
+
+wasm: $(WASM)
+$(WASM):
+	@mkdir -p wasm
+	echo "==> building $(NAME) for js/wasm"
+	GOOS=js GOARCH=wasm go build -trimpath -ldflags='-s -w' -o "$@" main.go
+
+# 发布 wasm：编译后一并复制 Go 官方 wasm_exec.js 运行器，方便直接开箱使用
+wasm-release: wasm
+	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" wasm/
+
 clean:
+	rm -rf wasm
 	rm -f $(BINDIR)/$(NAME)* $(DISTDIR)/$(NAME)*
 
 help:
 	@echo "make [all]         构建全部平台二进制到 $(BINDIR)/"
 	@echo "make <platform>    只构建一个平台，如 make linux-amd64"
 	@echo "make releases      构建二进制并打包 gz/zip 到 $(DISTDIR)/"
+	@echo "make wasm          构建 WebAssembly 到 wasm/main.wasm"
+	@echo "make wasm-release  构建 wasm 并附带 Go 官方 wasm_exec.js"
 	@echo "make clean         删除 $(NAME) 的构建产物"
